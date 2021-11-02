@@ -1,0 +1,22 @@
+{
+  "name": "pansy",
+  "version": "0.1.0",
+  "description": "Just-For-Fun programming language",
+  "main": "index.js",
+  "scripts": {
+  },
+  "keywords": [
+    "language"
+  ],
+  "author": "hazer-hazer",
+  "license": "ISC",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.3.0",
+    "@typescript-eslint/parser": "^5.3.0",
+    "eslint": "^8.1.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-security": "^1.4.0"
+  },
+  "dependencies": {
+  }
+}
