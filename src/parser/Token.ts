@@ -3,7 +3,7 @@ export enum TokenKind {
 
     Ident,
 
-    Number,
+    IntLit,
     String,
 
     Plus,   // +

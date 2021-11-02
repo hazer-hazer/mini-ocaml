@@ -1,10 +1,16 @@
-import {ADT} from '../adt/adt'
+import {ADT, MakeADT} from '../adt/adt'
 import {TokenKind} from './Token'
 
-export type Expr = ADT<{
-    Var: string
-    BoolLit: ADT<{True: null, False: null}>
-    NumLit: number
+export type Expr = MakeADT<'kind', {
+    Var: {
+        tok: string
+    }
+    BoolLit: {
+        True: boolean
+    }
+    IntLit: {
+        tok: string
+    }
     Let: {
         name: string
         val: Expr
@@ -40,6 +46,10 @@ export type Expr = ADT<{
     }
     Infix: {
         lhs: Expr
+        op: TokenKind
+        rhs: Expr
+    }
+    Prefix: {
         op: TokenKind
         rhs: Expr
     }

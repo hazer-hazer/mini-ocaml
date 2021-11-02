@@ -72,7 +72,7 @@ class Lexer {
             num += this.advance()
         }
 
-        this.addToken(TokenKind.Number, num)
+        this.addToken(TokenKind.IntLit, num)
     }
 
     private lexIdent() {
