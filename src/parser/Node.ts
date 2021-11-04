@@ -1,5 +1,5 @@
 import {ADT, MakeADT} from '../adt/adt'
-import {TokenKind} from './Token'
+import {TokenKind, Token} from './Token'
 
 export type Expr = MakeADT<'kind', {
     Var: {
@@ -14,13 +14,13 @@ export type Expr = MakeADT<'kind', {
     Let: {
         name: string
         val: Expr
-        in: Expr
+        body: Expr
     }
     LetRec: {
         func: string
         name: string
         val: Expr
-        in: Expr
+        body: Expr
     }
     Func: {
         param: string
@@ -53,4 +53,40 @@ export type Expr = MakeADT<'kind', {
         op: TokenKind
         rhs: Expr
     }
+    If: {
+        cond: Expr
+        ifBranch: Expr
+        elseBranch: Expr | null
+    }
 }>;
+
+export const astToString = (n: Expr): string => {
+    switch (n.kind) {
+    case 'Let': {
+        return `let ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
+    }
+    case 'Var': {
+        return n.tok
+    }
+    case 'BoolLit': {
+        return n.True ? 'true' : 'false'
+    }
+    case 'IntLit': {
+        return n.tok
+    }
+    case 'Func': {
+        return `func ${n.param} -> ${astToString(n.body)}`
+    }
+    case 'App': {
+        return `${astToString(n.lhs)} ${astToString(n.arg)}`
+    }
+    case 'If': {
+        return `if ${astToString(n.cond)}\n  then ${astToString(n.ifBranch)}\n  else ${astToString(n.elseBranch!)}`
+    }
+    case 'Infix': {
+        return `${astToString(n.lhs)} ${Token.kindStr(n.op)} ${astToString(n.rhs)}`
+    }
+    }
+
+    return '[NO REPRESENTATION]'
+}

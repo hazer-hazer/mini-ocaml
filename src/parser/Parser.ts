@@ -1,9 +1,11 @@
 import {Token, TokenKind} from './Token'
-import {Expr} from './Node'
+import {astToString, Expr} from './Node'
+import { Settings } from '../settings'
 
 class Parser {
     index: number
     tokens: Token[] = []
+    settings: Settings
 
     static readonly INFIX_OPS: TokenKind[] = [
         TokenKind.Plus,
@@ -23,13 +25,24 @@ class Parser {
 
     static readonly PREC_TABLE: (TokenKind[] | 'prefix')[] = [
         [TokenKind.Eq, TokenKind.LT, TokenKind.GT],
+        [TokenKind.ColCol],
         [TokenKind.Plus, TokenKind.Minus],
         [TokenKind.Mul, TokenKind.Div],
         'prefix',
     ]
 
-    constructor() {
+    static readonly PRIMARIES_FIRST: TokenKind[] = [
+        TokenKind.Ident,
+        TokenKind.IntLit,
+        TokenKind.True,
+        TokenKind.False,
+        TokenKind.LBrace,
+        TokenKind.LParen,
+    ]
+
+    constructor(settings: Settings) {
         this.index = 0
+        this.settings = settings
     }
 
     private peek(): Token {
@@ -43,21 +56,126 @@ class Parser {
     }
 
     private eof() {
-        return this.peek().kind === TokenKind.Eof
+        return this.index >= this.tokens.length
     }
 
-    private is(kind: TokenKind) {
+    private is(kind: TokenKind): boolean {
+        if (!this.peek()) {
+            return false
+        }
         return this.peek().kind === kind
+    }
+
+    private isPrimaryFirst() {
+        return Parser.PRIMARIES_FIRST.includes(this.peek().kind)
+    }
+
+    private skip(kind: TokenKind): Token {
+        if (!this.is(kind)) {
+            throw new Error(`Expected '${Token.kindStr(kind)}', got '${this.peek()}'`)
+        }
+
+        return this.advance()
     }
 
     public parse(tokens: Token[]): Expr {
         this.tokens = tokens
+        this.index = 0
 
-        return this.parseExpr()
+        const expr = this.parseExpr()
+
+        this.skip(TokenKind.Eof)
+
+        if (this.settings.debug) {
+            console.log('=== AST ===');
+            console.log(astToString(expr));
+        }
+
+        return expr
     }
 
     private parseExpr(): Expr {
-        return this.precParse(0)
+        let lhs: Expr | null = null
+
+        if (this.is(TokenKind.Func)) {
+            lhs = this.parseFunc()
+        } else if (this.is(TokenKind.Let)) {
+            lhs = this.parseLet()
+        } else if (this.is(TokenKind.If)) {
+            lhs = this.parseIf()
+        } else {
+            lhs = this.precParse(0)
+        }
+
+        if (lhs && this.isPrimaryFirst()) {
+            const arg = this.parsePrimary()
+
+            if (arg) {
+                lhs = {kind: 'App', lhs: lhs!, arg: arg!}
+            }
+        }
+
+        return lhs!
+    }
+
+    private parseFunc(): Expr {
+        this.skip(TokenKind.Func)
+
+        const param = this.skip(TokenKind.Ident).val
+
+        this.skip(TokenKind.Arrow)
+
+        const body = this.parseExpr()
+
+        return {kind: 'Func', param, body}
+    }
+
+    private parseLet(): Expr {
+        this.skip(TokenKind.Let)
+
+        if (this.is(TokenKind.Rec)) {
+            this.skip(TokenKind.Rec)
+
+            const func = this.skip(TokenKind.Ident).val
+            const name = this.skip(TokenKind.Ident).val
+            const val = this.parseExpr()
+
+            this.skip(TokenKind.In)
+
+            const body = this.parseExpr()
+
+            return {kind: 'LetRec', func, name, val, body}
+        }
+
+        const name = this.skip(TokenKind.Ident).val
+
+        this.skip(TokenKind.Eq)
+
+        const val = this.parseExpr()
+
+        this.skip(TokenKind.In)
+
+        const body = this.parseExpr()
+
+        return {kind: 'Let', name, val, body}
+    }
+
+    private parseIf(): Expr {
+        this.skip(TokenKind.If)
+
+        const cond = this.parseExpr()
+
+        this.skip(TokenKind.Then)
+
+        const ifBranch = this.parseExpr()
+
+        let elseBranch = null
+        if (this.is(TokenKind.Else)) {
+            this.skip(TokenKind.Else)
+            elseBranch = this.parseExpr()
+        }
+
+        return {kind: 'If', cond, ifBranch, elseBranch}
     }
 
     private precParse(precIndex: number = 0): Expr {
@@ -66,12 +184,16 @@ class Parser {
             return this.parsePrefix()
         }
 
-        const lhs = this.precParse(precIndex + 1)
+        if (precIndex >= Parser.PREC_TABLE.length) {
+            return this.parsePrimary()!
+        }
 
-        if (Parser.INFIX_OPS.includes(this.peek().kind)) {
+        let lhs = this.precParse(precIndex + 1)
+
+        while (parser.includes(this.peek().kind)) {
             const op = this.advance().kind
             const rhs = this.precParse(precIndex + 1)
-            return {kind: 'Infix', lhs, op, rhs}
+            lhs = {kind: 'Infix', lhs, op, rhs}
         }
 
         return lhs
@@ -80,17 +202,11 @@ class Parser {
     private parsePrefix(): Expr {
         if (Parser.PREFIX_OPS.includes(this.peek().kind)) {
             const op = this.advance().kind
-            const rhs = this.parseExpr()
+            const rhs = this.parsePrefix()
             return {kind: 'Prefix', op, rhs}
         }
 
-        return this.parsePostfix()
-    }
-
-    private parsePostfix(): Expr {
-        const lhs = this.parseExpr()
-        const arg = this.parseExpr()
-        return {kind: 'App', lhs, arg}
+        return this.parsePrimary()
     }
 
     private parsePrimary(): Expr {
@@ -117,8 +233,15 @@ class Parser {
             // todo
         }
 
-        throw new Error(`Unexpected token '${this.peek()}'`)
+        throw new Error(`Unexpected token ${this.peek()}`)
     }
+
+    // private parseOptPrimary(): Expr | null {
+    //     if (this.isPrimaryFirst()) {
+    //         return this.parsePrimary()
+    //     }
+    //     return null
+    // }
 }
 
 export default Parser

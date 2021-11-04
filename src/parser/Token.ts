@@ -63,9 +63,67 @@ export class Token {
         'tail': TokenKind.Tail,
     }
 
+    static readonly KIND_STR: Record<TokenKind, string> = {
+        [TokenKind.Eof]: '[EOF]',
+    
+        [TokenKind.Ident]: 'identifier',
+
+        [TokenKind.IntLit]: 'integer',
+        [TokenKind.String]: 'string',
+    
+        [TokenKind.Plus]: '+',   // +
+        [TokenKind.Minus]: '-',  // -
+        [TokenKind.Mul]: '*',    // *
+        [TokenKind.Div]: '/',    // /
+        [TokenKind.Eq]: '=',     // =
+        [TokenKind.LT]: '<',     // <
+        [TokenKind.GT]: '>',     // >
+    
+        [TokenKind.Col]: ':',    // :
+        [TokenKind.ColCol]: '::', // ::
+    
+        [TokenKind.LParen]: '(', // (
+        [TokenKind.RParen]: ')', // )
+        [TokenKind.LBrace]: '[', // [
+        [TokenKind.RBrace]: ']', // ]
+    
+        [TokenKind.Arrow]: '->',  // ->
+        [TokenKind.VBar]: '|',    // |
+    
+        // Keywords //
+        [TokenKind.True]: 'true',
+        [TokenKind.False]: 'false',
+        [TokenKind.Func]: 'func',
+        [TokenKind.Let]: 'let',
+        [TokenKind.Rec]: 'rec',
+        [TokenKind.In]: 'in',
+        [TokenKind.If]: 'if',
+        [TokenKind.Then]: 'then',
+        [TokenKind.Else]: 'else',
+        [TokenKind.Match]: 'match',
+        [TokenKind.With]: 'with',
+        [TokenKind.Head]: 'head',
+        [TokenKind.Tail]: 'tail',
+    }
+
     constructor(kind: TokenKind, val: TokenVal) {
         this.kind = kind
         this.val = val
+    }
+
+    public static kindStr(kind: TokenKind): string {
+        return Token.KIND_STR[kind]
+    }
+
+    public toString = (): string => {
+        switch (this.kind) {
+        case TokenKind.Ident:
+        case TokenKind.IntLit:
+        case TokenKind.String: {
+            return this.val
+        }
+        }
+        return Token.KIND_STR[this.kind]
     }
 }
 

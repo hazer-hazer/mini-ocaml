@@ -1,39 +1,49 @@
+import { Settings } from '../settings'
 import {Token, TokenKind, TokenVal} from './Token'
 
 class Lexer {
     private index: number
-    private source: string | null
+    private source: string | null = null
     private tokens: Token[] = []
 
-    constructor() {
+    private settings: Settings
+
+    last: string = ''
+
+    constructor(settings: Settings) {
         this.index = 0
         this.source = null
+        this.settings = settings
     }
 
     private eof() {
-        return this.index > this.source!.length
+        return this.index >= this.source!.length
     }
 
-    private peek() {
+    private peek(): string {
         return this.source![this.index]
     }
 
-    private advance(offset = 1) {
+    private advance(offset = 1): string {
         const cur = this.peek()
         this.index += offset
         return cur
     }
 
-    private lookup() {
-        return this.source?.[this.index]
+    private lookup(): string {
+        return this.source![this.index + 1]
     }
 
-    private isDigit() {
+    private isDigit(): boolean {
         return /[0-9]/.test(this.peek())
     }
 
-    private isAlpha() {
+    private isAlpha(): boolean {
         return /[a-zA-Z]/.test(this.peek())
+    }
+
+    private isSkippable(): boolean {
+        return /\s/.test(this.peek())
     }
 
     private addToken(kind: TokenKind, val: TokenVal = '') {
@@ -47,6 +57,7 @@ class Lexer {
     }
 
     public lex(source: string) {
+        this.tokens = []
         this.source = source
         this.index = 0
 
@@ -55,12 +66,21 @@ class Lexer {
                 this.lexNumber()
             } else if (this.isAlpha()) {
                 this.lexIdent()
+            } else if (this.isSkippable()) {
+                this.advance()
             } else {
                 this.lexMisc()
             }
         }
 
         this.addToken(TokenKind.Eof)
+
+        if (this.settings.debug) {
+            console.log('=== TOKENS ===')
+            for (const tok of this.tokens) {
+                console.log(tok.toString());
+            }
+        }
 
         return this.tokens
     }
@@ -153,7 +173,7 @@ class Lexer {
             break
         }
         default: {
-            throw new Error('Unexpected token \'' + this.peek() + '\'')
+            throw new Error(`Unexpected token \'${this.peek()}\' at ${this.index}`)
         }
         }
     }
