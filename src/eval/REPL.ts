@@ -42,20 +42,22 @@ export class REPL {
             if (!input.length) {
                 return cb(null, '')
             }
-            const tokens = this.lexer.lex(input)
+            const {tokens, source} = this.lexer.lex(input)
 
             if (tokens[0].kind === TokenKind.Eof) {
                 cb(null, '')
                 return
             }
 
-            const expr = this.parser.parse(tokens)
+            const expr = this.parser.parse(tokens, source)
 
             const result = this.inter.interpret(expr)
 
-            console.log('=== env ===');
-            for (const [k, v] of Object.entries(this.inter.envStack[this.inter.envStack.length - 1])) {
-                console.log(k, v);
+            if (this.settings.debug) {
+                console.log('=== env ===');
+                for (const [k, v] of Object.entries(this.inter.envStack[this.inter.envStack.length - 1])) {
+                    console.log(k, v);
+                }
             }
 
             cb(null, result ? valueStr(result) : '')

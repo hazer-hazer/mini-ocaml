@@ -1,11 +1,14 @@
 import { MakeADT } from "../adt/adt"
-import { Expr } from "../parser/Node"
-import { TokenKind } from "../parser/Token"
+import { astToString, Expr } from "../parser/Node"
+import { Token, TokenKind } from "../parser/Token"
 
 export type Env = Record<string, Value>
 
+export class AnonTagClass {}
+const AnonTag = new AnonTagClass
+
 export type Value = MakeADT<'type', {
-    None: {}
+    Unit: {}
     Int: {
         val: number
     }
@@ -13,9 +16,13 @@ export type Value = MakeADT<'type', {
         val: boolean
     }
     List: {
-        elements: any[] // Cannot use `Value` as it causes cyclic reference issue
+        values: any[] // Cannot use `Value` as it causes cyclic reference issue
     }
-    Func: {
+    Tuple: {
+        values: any[]
+    }
+    Closure: {
+        name: string | AnonTagClass
         param: string
         body: Expr
         env: Env
@@ -48,6 +55,15 @@ const compareValues = (lhs: Value, rhs: Value): boolean => {
     throw new Error('Unable to compare values, now only integer and boolean comparisons allowed')
 }
 
+export const envStr = (env: Env): string => {
+    const mult = Object.keys(env).length > 1
+    let str = '{' + (mult ? '\n' : '')
+    for (const [name, val] of Object.entries(env)) {
+        str += `${mult ? '  ' : ''}${name}: ${valueStr(val)}`
+    }
+    return str + (mult ? '\n' : '') + '}' 
+}
+
 export const valueStr = (val: Value): string => {
     switch (val.type) {
     case 'Bool': {
@@ -57,13 +73,16 @@ export const valueStr = (val: Value): string => {
         return val.val.toString()
     }
     case 'List': {
-        return `[${val.elements.map(el => valueStr(el)).join(', ')}]`
+        return `[${val.values.map(el => valueStr(el)).join(', ')}]`
     }
-    case 'Func': {
-        return `<func ${val.param} -> ...>`
+    case 'Closure': {
+        return `${val.name === AnonTag ? `[rec-func] ${val.name}: ` : 'func'} ${val.param} -> ${astToString(val.body)} [env] ${envStr(val.env)}`
     }
-    case 'None': {
+    case 'Unit': {
         return '()'
+    }
+    case 'Tuple': {
+        return `(${val.values.map(el => valueStr(el)).join(', ')})`
     }
     }
 }
@@ -95,7 +114,7 @@ export class Interpreter {
             this.enterEnv(extendEnv(this.backEnv(), expr.name, this.interpret(expr.val)))
 
             const result = this.interpret(expr.body)
-            
+
             this.exitEnv()
 
             return result
@@ -110,11 +129,11 @@ export class Interpreter {
             return {type: 'Int', val: Number(expr.tok)}
         }
         case 'Func': {
-            return {type: 'Func', param: expr.param, body: expr.body, env: this.backEnv()}
+            return {type: 'Closure', name: AnonTag, param: expr.param, body: expr.body, env: this.backEnv()}
         }
         case 'App': {
             const lhs = this.interpret(expr.lhs)
-            if (lhs.type !== 'Func') {
+            if (lhs.type !== 'Closure') {
                 throw new Error('Expected function on left-hand side, got ' + valueStr(lhs))
             }
             const arg = this.interpret(expr.arg)
@@ -143,9 +162,45 @@ export class Interpreter {
             const rhs = this.interpret(expr.rhs)
             return this.evalInfix(expr.op, lhs, rhs)
         }
+        case 'Tuple': {
+            let values = []
+            for (const el of expr.elements) {
+                values.push(this.interpret(el))
+            }
+            return {type: 'Tuple', values}
         }
+        case 'Paren': {
+            return this.interpret(expr.expr)
+        }
+        case 'Unit': {
+            return {type: 'Unit'}
+        }
+        case 'LetRec': {
+            const func: Value = {type: 'Closure', name: expr.func, body: expr.val, param: expr.name, env: this.backEnv()}
 
-        throw new Error(`Unhandled kind of expression '${expr.kind}'`)
+            this.enterEnv(extendEnv(this.backEnv(), expr.func, func))
+
+            const val = this.interpret(expr.body)
+
+            this.exitEnv()
+
+            return val
+        }
+        case 'Match': {
+            throw new Error(`Not implemented`)
+        }
+        case 'List': {
+            const values = []
+            for (const el of expr.elements) {
+                values.push(this.interpret(el))
+            }
+            return {type: 'List', values}
+        }
+        case 'Prefix': {
+            const rhs = this.interpret(expr.rhs)
+            return this.evalPrefix(expr.op, rhs)
+        }
+        }
     }
 
     private lookup(name: string, env: Env): Value {
@@ -176,8 +231,36 @@ export class Interpreter {
             return {type: 'Bool', val: compareValues(lhs, rhs)}
             // return {type: 'Int', val: toInt(lhs) - toInt(rhs)}
         }
+        case TokenKind.ColCol: {
+            if (rhs.type !== 'List') {
+                throw new Error('Right-hand side of :: operator must be of list type')
+            }
+            return {type: 'List', values: [lhs, ...rhs.values]}
+        }
         }
 
-        throw new Error('Invalid infix operator')
+        throw new Error(`Invalid infix operator ${Token.kindStr(op)}`)
+    }
+
+    private evalPrefix(op: TokenKind, rhs: Value): Value {
+        switch (op) {
+        case TokenKind.Minus: {
+            return {type: 'Int', val: -toInt(rhs)}
+        }
+        case TokenKind.Head: {
+            if (rhs.type !== 'List') {
+                throw new Error(`'head' operator requires list`)
+            }
+            return rhs.values[0]
+        }
+        case TokenKind.Tail: {
+            if (rhs.type !== 'List') {
+                throw new Error(`'tail' operator requires list`)
+            }
+            return {type: 'List', values: rhs.values.slice(1)}
+        }
+        }
+
+        throw new Error(`Invalid prefix operator ${Token.kindStr(op)}`)
     }
 }

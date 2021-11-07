@@ -1,5 +1,6 @@
 import { Settings } from '../settings'
-import {Token, TokenKind, TokenVal} from './Token'
+import { Source } from './Source'
+import {Span, Token, TokenKind, TokenVal} from './Token'
 
 class Lexer {
     private index: number
@@ -7,8 +8,8 @@ class Lexer {
     private tokens: Token[] = []
 
     private settings: Settings
-
-    last: string = ''
+    private sourceLines: string[] = []
+    private linesPositions: number[] = []
 
     constructor(settings: Settings) {
         this.index = 0
@@ -46,22 +47,41 @@ class Lexer {
         return /\s/.test(this.peek())
     }
 
-    private addToken(kind: TokenKind, val: TokenVal = '') {
-        this.tokens.push(new Token(kind, val))
+    private isNl(): boolean {
+        return /\n/.test(this.peek())
+    }
+
+    private addTokenSym(kind: TokenKind, len: number) {
+        this.tokens.push(new Token(kind, '', new Span(this.index, len)))
+    }
+
+    private addToken(kind: TokenKind, val: TokenVal) {
+        this.tokens.push(new Token(kind, val, new Span(this.index, val.length)))
     }
 
     // Shortcut for operators with `advance` offset
     private addTokenAdv(kind: TokenKind, offset = 1) {
-        this.addToken(kind)
+        this.addTokenSym(kind, offset)
         this.advance(offset)
     }
 
-    public lex(source: string) {
+    public lex(source: string): {tokens: Token[], source: Source} {
         this.tokens = []
         this.source = source
+        this.sourceLines = []
+        this.linesPositions = [0]
         this.index = 0
 
+        let lastIndex = 0
         while (!this.eof()) {
+            if (this.isNl()) {
+                this.sourceLines.push(source.slice(lastIndex, this.index))
+                this.advance()
+                lastIndex = this.index
+                this.linesPositions.push(this.index)
+                continue
+            }
+
             if (this.isDigit()) {
                 this.lexNumber()
             } else if (this.isAlpha()) {
@@ -73,16 +93,18 @@ class Lexer {
             }
         }
 
-        this.addToken(TokenKind.Eof)
+        this.addTokenSym(TokenKind.Eof, 1)
 
         if (this.settings.debug) {
             console.log('=== TOKENS ===')
             for (const tok of this.tokens) {
                 console.log(tok.toString());
             }
+
+            console.log('source lines:\n', this.sourceLines);
         }
 
-        return this.tokens
+        return {tokens: this.tokens, source: new Source(source, this.sourceLines, this.linesPositions, source.length)}
     }
 
     private lexNumber() {
@@ -104,7 +126,7 @@ class Lexer {
 
         const maybeKw = Token.KW_STR[ident]
         if (maybeKw) {
-            this.addToken(maybeKw!)
+            this.addToken(maybeKw!, ident)
         } else {
             this.addToken(TokenKind.Ident, ident)
         }
@@ -157,25 +179,51 @@ class Lexer {
             break
         }
         case ')': {
-            this.addTokenAdv(TokenKind.LParen)
+            this.addTokenAdv(TokenKind.RParen)
             break
         }
         case '[': {
-            this.addTokenAdv(TokenKind.LBrace)
+            this.addTokenAdv(TokenKind.LBracket)
             break
         }
         case ']': {
-            this.addTokenAdv(TokenKind.RBrace)
+            this.addTokenAdv(TokenKind.RBracket)
             break
         }
         case '|': {
             this.addTokenAdv(TokenKind.VBar)
             break
         }
+        case ',': {
+            this.addTokenAdv(TokenKind.Comma)
+        }
         default: {
-            throw new Error(`Unexpected token \'${this.peek()}\' at ${this.index}`)
+            this.error(`Unexpected token \'${this.peek()}\'`)
         }
         }
+    }
+
+    private error(msg: string) {
+        let leftIndex = 0
+        let rightIndex = 0
+
+        for (let i = 0; i < this.source!.length; i++) {
+            if (this.source![i] !== '\n') {
+                continue
+            }
+
+            if (i < this.index) {
+                leftIndex = i
+            }
+
+            if (i > this.index) {
+                rightIndex = i
+            }
+        }
+
+        const indent = ' '.repeat(this.index - leftIndex)
+
+        throw new Error(`\n${this.source!.slice(leftIndex, rightIndex)}\n${indent}^ ${msg}`)
     }
 }
 

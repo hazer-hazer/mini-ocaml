@@ -1,11 +1,13 @@
 import {Token, TokenKind} from './Token'
 import {astToString, Expr} from './Node'
 import { Settings } from '../settings'
+import { Source } from './Source'
 
 class Parser {
     index: number
     tokens: Token[] = []
     settings: Settings
+    source?: Source
 
     static readonly INFIX_OPS: TokenKind[] = [
         TokenKind.Plus,
@@ -36,7 +38,7 @@ class Parser {
         TokenKind.IntLit,
         TokenKind.True,
         TokenKind.False,
-        TokenKind.LBrace,
+        TokenKind.LBracket,
         TokenKind.LParen,
     ]
 
@@ -72,15 +74,16 @@ class Parser {
 
     private skip(kind: TokenKind): Token {
         if (!this.is(kind)) {
-            throw new Error(`Expected '${Token.kindStr(kind)}', got '${this.peek()}'`)
+            this.error(`Expected '${Token.kindStr(kind)}', got '${this.peek()}'`)
         }
 
         return this.advance()
     }
 
-    public parse(tokens: Token[]): Expr {
+    public parse(tokens: Token[], source: Source): Expr {
         this.tokens = tokens
         this.index = 0
+        this.source = source
 
         const expr = this.parseExpr()
 
@@ -138,6 +141,9 @@ class Parser {
 
             const func = this.skip(TokenKind.Ident).val
             const name = this.skip(TokenKind.Ident).val
+
+            this.skip(TokenKind.Eq)
+
             const val = this.parseExpr()
 
             this.skip(TokenKind.In)
@@ -209,6 +215,37 @@ class Parser {
         return this.parsePrimary()
     }
 
+    private parseDelim(begin: TokenKind, end: TokenKind, allowTrailing: boolean, delim: TokenKind = TokenKind.Comma): {elements: Expr[], trailingComma: boolean} {
+        this.skip(begin)
+
+        let elements: Expr[] = []
+        let first = true
+        let trailingComma = false
+
+        while (!this.eof()) {
+            if (this.is(end)) {
+                break
+            }
+
+            if (first) {
+                first = false
+            } else {
+                this.skip(delim)
+            }
+
+            if (allowTrailing && this.is(end)) {
+                trailingComma = true
+                break
+            }
+
+            elements.push(this.parseExpr())
+        }
+
+        this.skip(end)
+
+        return {elements, trailingComma}
+    }
+
     private parsePrimary(): Expr {
         if (this.is(TokenKind.Ident)) {
             const tok = this.advance().val
@@ -225,15 +262,25 @@ class Parser {
             return {kind: 'BoolLit', True}
         }
 
-        if (this.is(TokenKind.LBrace)) {
-            // todo
+        if (this.is(TokenKind.LBracket)) {
+            const {elements} = this.parseDelim(TokenKind.LBracket, TokenKind.RBracket, true)
+
+            return {kind: 'List', elements}
         }
 
         if (this.is(TokenKind.LParen)) {
-            // todo
+            const {elements, trailingComma} = this.parseDelim(TokenKind.LParen, TokenKind.RParen, true)
+
+            if (elements.length === 0) {
+                return {kind: 'Unit'}
+            } else if (trailingComma || elements.length > 1) {
+                return {kind: 'Tuple', elements}
+            }
+
+            return {kind: 'Paren', expr: elements[0]}
         }
 
-        throw new Error(`Unexpected token ${this.peek()}`)
+        this.error(`Unexpected token ${this.peek()}`)
     }
 
     // private parseOptPrimary(): Expr | null {
@@ -242,6 +289,14 @@ class Parser {
     //     }
     //     return null
     // }
+
+    private error(msg: string): never {
+        const span = this.peek().span
+        const {pos: linePos, content: line} = this.source!.getSpanLine(span)
+        const pointer = `${' '.repeat(span.pos - linePos)}^`
+
+        throw new Error(`\n${line}\n${pointer} ${msg}`)
+    }
 }
 
 export default Parser

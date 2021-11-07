@@ -34,15 +34,8 @@ export type Expr = MakeADT<'kind', {
         subj: Expr
         with: [Expr, Expr][]
     }
-    Cons: {
-        lhs: Expr
-        rhs: Expr
-    }
-    Head: {
-        expr: Expr
-    }
-    Tail: {
-        expr: Expr
+    List: {
+        elements: Expr[]
     }
     Infix: {
         lhs: Expr
@@ -58,6 +51,13 @@ export type Expr = MakeADT<'kind', {
         ifBranch: Expr
         elseBranch: Expr | null
     }
+    Tuple: {
+        elements: Expr[]
+    }
+    Paren: {
+        expr: Expr
+    }
+    Unit: {}
 }>;
 
 export const astToString = (n: Expr): string => {
@@ -86,7 +86,28 @@ export const astToString = (n: Expr): string => {
     case 'Infix': {
         return `${astToString(n.lhs)} ${Token.kindStr(n.op)} ${astToString(n.rhs)}`
     }
+    case 'List': {
+        return `[${n.elements.map(el => astToString(el)).join(', ')}]`
     }
-
-    return '[NO REPRESENTATION]'
+    case 'Prefix': {
+        return `${Token.kindStr(n.op)}${astToString(n.rhs)}`
+    }
+    case 'Match': {
+        return `match ${astToString(n.subj)} with\n |${
+            n.with.map(el => `${astToString(el[0])} -> ${astToString(el[1])}`).join('\n| ')
+        }`
+    }
+    case 'LetRec': {
+        return `let rec ${n.func} ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
+    }
+    case 'Paren': {
+        return `(${astToString(n.expr)})`
+    }
+    case 'Tuple': {
+        return `(${n.elements.map(el => astToString(el)).join(', ')})`
+    }
+    case 'Unit': {
+        return `()`
+    }
+    }
 }

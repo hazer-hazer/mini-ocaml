@@ -19,11 +19,12 @@ export enum TokenKind {
 
     LParen, // (
     RParen, // )
-    LBrace, // [
-    RBrace, // ]
+    LBracket, // [
+    RBracket, // ]
 
     Arrow,  // ->
     VBar,    // |
+    Comma,  // ,
 
     // Keywords //
     True,
@@ -43,9 +44,24 @@ export enum TokenKind {
 
 export type TokenVal = string
 
+export class Span {
+    pos: number
+    len: number
+
+    constructor(pos: number, len: number) {
+        this.pos = pos
+        this.len = len
+    }
+
+    public str(): string {
+        return `pos: ${this.pos}; len: ${this.len}`
+    }
+}
+
 export class Token {
     kind: TokenKind
     val: TokenVal
+    span: Span
 
     static readonly KW_STR: Record<string, TokenKind> = {
         'true': TokenKind.True,
@@ -84,11 +100,12 @@ export class Token {
     
         [TokenKind.LParen]: '(', // (
         [TokenKind.RParen]: ')', // )
-        [TokenKind.LBrace]: '[', // [
-        [TokenKind.RBrace]: ']', // ]
+        [TokenKind.LBracket]: '[', // [
+        [TokenKind.RBracket]: ']', // ]
     
         [TokenKind.Arrow]: '->',  // ->
         [TokenKind.VBar]: '|',    // |
+        [TokenKind.Comma]: ',',    // |
     
         // Keywords //
         [TokenKind.True]: 'true',
@@ -102,13 +119,14 @@ export class Token {
         [TokenKind.Else]: 'else',
         [TokenKind.Match]: 'match',
         [TokenKind.With]: 'with',
-        [TokenKind.Head]: 'head',
-        [TokenKind.Tail]: 'tail',
+        [TokenKind.Head]: 'head ',
+        [TokenKind.Tail]: 'tail ',
     }
 
-    constructor(kind: TokenKind, val: TokenVal) {
+    constructor(kind: TokenKind, val: TokenVal, span: Span) {
         this.kind = kind
         this.val = val
+        this.span = span
     }
 
     public static kindStr(kind: TokenKind): string {
