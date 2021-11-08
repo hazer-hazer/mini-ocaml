@@ -90,8 +90,8 @@ class Parser {
         this.skip(TokenKind.Eof)
 
         if (this.settings.debug) {
-            console.log('=== AST ===');
-            console.log(astToString(expr));
+            console.log('=== AST ===')
+            console.log(astToString(expr))
         }
 
         return expr
@@ -184,7 +184,7 @@ class Parser {
         return {kind: 'If', cond, ifBranch, elseBranch}
     }
 
-    private precParse(precIndex: number = 0): Expr {
+    private precParse(precIndex = 0): Expr {
         const parser = Parser.PREC_TABLE[precIndex]
         if (parser === 'prefix') {
             return this.parsePrefix()
@@ -218,7 +218,7 @@ class Parser {
     private parseDelim(begin: TokenKind, end: TokenKind, allowTrailing: boolean, delim: TokenKind = TokenKind.Comma): {elements: Expr[], trailingComma: boolean} {
         this.skip(begin)
 
-        let elements: Expr[] = []
+        const elements: Expr[] = []
         let first = true
         let trailingComma = false
 

@@ -1,4 +1,4 @@
-import {ADT, MakeADT} from '../adt/adt'
+import {MakeADT} from '../adt/adt'
 import {TokenKind, Token} from './Token'
 
 export type Expr = MakeADT<'kind', {
@@ -107,7 +107,7 @@ export const astToString = (n: Expr): string => {
         return `(${n.elements.map(el => astToString(el)).join(', ')})`
     }
     case 'Unit': {
-        return `()`
+        return '()'
     }
     }
 }

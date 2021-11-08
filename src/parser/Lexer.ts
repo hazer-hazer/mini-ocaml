@@ -98,10 +98,10 @@ class Lexer {
         if (this.settings.debug) {
             console.log('=== TOKENS ===')
             for (const tok of this.tokens) {
-                console.log(tok.toString());
+                console.log(tok.toString())
             }
 
-            console.log('source lines:\n', this.sourceLines);
+            console.log('source lines:\n', this.sourceLines)
         }
 
         return {tokens: this.tokens, source: new Source(source, this.sourceLines, this.linesPositions, source.length)}
@@ -196,9 +196,10 @@ class Lexer {
         }
         case ',': {
             this.addTokenAdv(TokenKind.Comma)
+            break
         }
         default: {
-            this.error(`Unexpected token \'${this.peek()}\'`)
+            this.error(`Unexpected token '${this.peek()}'`)
         }
         }
     }

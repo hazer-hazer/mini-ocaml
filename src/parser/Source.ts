@@ -1,4 +1,4 @@
-import { Span } from "./Token"
+import { Span } from './Token'
 
 type Line = {pos: number, content: string}
 
@@ -30,7 +30,7 @@ export class Source {
             if (span.pos >= linePos && span.pos < nextLinePos) {
                 lines.push({
                     pos: linePos,
-                    content: this.lines[i]
+                    content: this.lines[i],
                 })
             }
         }
