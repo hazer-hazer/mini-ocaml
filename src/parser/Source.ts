@@ -36,7 +36,11 @@ export class Source {
         }
 
         if (!lines.length) {
-            throw new Error(`Cannot get line by span ${span.str()}`)
+            lines.push({
+                pos: this.linesPositions[this.linesPositions.length - 1],
+                content: this.lines[this.lines.length - 1],
+            })
+            // throw new Error(`Cannot get line by span ${span.str()}`)
         }
 
         return lines[0]
