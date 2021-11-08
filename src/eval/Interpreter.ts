@@ -30,32 +30,6 @@ export type Value = MakeADT<'type', {
     }
 }>
 
-const toInt = (val: Value): number => {
-    if (val.type !== 'Int') {
-        throw new Error('Integer value expected')
-    }
-    return val.val
-}
-
-const toBool = (val: Value): boolean => {
-    if (val.type !== 'Bool') {
-        throw new Error('Expected boolean value')
-    }
-    return val.val
-}
-
-const compareValues = (lhs: Value, rhs: Value): boolean => {
-    if (lhs.type === 'Int') {
-        return toInt(lhs) === toInt(rhs)
-    }
-
-    if (lhs.type === 'Bool') {
-        return toBool(lhs) === toBool(rhs)
-    }
-
-    throw new Error('Unable to compare values, now only integer and boolean comparisons allowed')
-}
-
 export const envStr = (env: Env): string => {
     const mult = Object.keys(env).length > 1
     let str = '{' + (mult ? '\n' : '')
@@ -163,7 +137,34 @@ export class Interpreter {
         case 'Infix': {
             const lhs = this.interpret(expr.lhs)
             const rhs = this.interpret(expr.rhs)
-            return this.evalInfix(expr.op, lhs, rhs)
+
+            switch (expr.op.kind) {
+            case TokenKind.Plus: {
+                return {type: 'Int', val: this.toInt(lhs, expr.lhs.span) + this.toInt(rhs, expr.rhs.span)}
+            }
+            case TokenKind.Minus: {
+                return {type: 'Int', val: this.toInt(lhs, expr.lhs.span) - this.toInt(rhs, expr.rhs.span)}
+            }
+            case TokenKind.Mul: {
+                return {type: 'Int', val: this.toInt(lhs, expr.lhs.span) * this.toInt(rhs, expr.rhs.span)}
+            }
+            case TokenKind.Div: {
+                return {type: 'Int', val: this.toInt(lhs, expr.lhs.span) * this.toInt(rhs, expr.rhs.span)}
+            }
+            case TokenKind.Eq: {
+                return {type: 'Bool', val: this.compareValues(lhs, rhs, expr.lhs.span, expr.rhs.span)}
+                // return {type: 'Int', val: this.toInt(lhs, expr.lhs.span) - this.toInt(rhs, expr.rhs.span)}
+            }
+            case TokenKind.ColCol: {
+                if (rhs.type !== 'List') {
+                    this.error('Right-hand side of :: operator must be of list type', expr.op.span)
+                }
+                return {type: 'List', values: [lhs, ...rhs.values]}
+            }
+            }
+
+            this.error(`Invalid infix operator ${Token.kindStr(expr.op.kind)}`, expr.op.span)
+            break
         }
         case 'Tuple': {
             const values = []
@@ -201,7 +202,26 @@ export class Interpreter {
         }
         case 'Prefix': {
             const rhs = this.interpret(expr.rhs)
-            return this.evalPrefix(expr.op, rhs)
+            switch (expr.op.kind) {
+            case TokenKind.Minus: {
+                return {type: 'Int', val: -this.toInt(rhs, expr.rhs.span)}
+            }
+            case TokenKind.Head: {
+                if (rhs.type !== 'List') {
+                    this.error('\'head\' operator requires list', expr.op.span)
+                }
+                return rhs.values[0]
+            }
+            case TokenKind.Tail: {
+                if (rhs.type !== 'List') {
+                    this.error('\'tail\' operator requires list', expr.op.span)
+                }
+                return {type: 'List', values: rhs.values.slice(1)}
+            }
+            }
+
+            this.error(`Invalid prefix operator ${Token.kindStr(expr.op.kind)}`, expr.op.span)
+            break
         }
         }
     }
@@ -216,55 +236,30 @@ export class Interpreter {
         return val
     }
 
-    private evalInfix(op: TokenKind, lhs: Value, rhs: Value): Value {
-        switch (op) {
-        case TokenKind.Plus: {
-            return {type: 'Int', val: toInt(lhs) + toInt(rhs)}
+    toInt(val: Value, span: Span): number {
+        if (val.type !== 'Int') {
+            this.error('Integer value expected', span)
         }
-        case TokenKind.Minus: {
-            return {type: 'Int', val: toInt(lhs) - toInt(rhs)}
-        }
-        case TokenKind.Mul: {
-            return {type: 'Int', val: toInt(lhs) * toInt(rhs)}
-        }
-        case TokenKind.Div: {
-            return {type: 'Int', val: toInt(lhs) * toInt(rhs)}
-        }
-        case TokenKind.Eq: {
-            return {type: 'Bool', val: compareValues(lhs, rhs)}
-            // return {type: 'Int', val: toInt(lhs) - toInt(rhs)}
-        }
-        case TokenKind.ColCol: {
-            if (rhs.type !== 'List') {
-                throw new Error('Right-hand side of :: operator must be of list type')
-            }
-            return {type: 'List', values: [lhs, ...rhs.values]}
-        }
-        }
-
-        throw new Error(`Invalid infix operator ${Token.kindStr(op)}`)
+        return val.val
     }
 
-    private evalPrefix(op: TokenKind, rhs: Value): Value {
-        switch (op) {
-        case TokenKind.Minus: {
-            return {type: 'Int', val: -toInt(rhs)}
+    toBool(val: Value, span: Span): boolean {
+        if (val.type !== 'Bool') {
+            this.error('Expected boolean value', span)
         }
-        case TokenKind.Head: {
-            if (rhs.type !== 'List') {
-                throw new Error('\'head\' operator requires list')
-            }
-            return rhs.values[0]
-        }
-        case TokenKind.Tail: {
-            if (rhs.type !== 'List') {
-                throw new Error('\'tail\' operator requires list')
-            }
-            return {type: 'List', values: rhs.values.slice(1)}
-        }
+        return val.val
+    }
+
+    compareValues(lhs: Value, rhs: Value, lhsSpan: Span, rhsSpan: Span): boolean {
+        if (lhs.type === 'Int') {
+            return this.toInt(lhs, lhsSpan) === this.toInt(rhs, rhsSpan)
         }
 
-        throw new Error(`Invalid prefix operator ${Token.kindStr(op)}`)
+        if (lhs.type === 'Bool') {
+            return this.toBool(lhs, lhsSpan) === this.toBool(rhs, rhsSpan)
+        }
+
+        this.error('Unable to compare values, now only integer and boolean comparisons allowed', lhsSpan.to(rhsSpan))
     }
 
     private error(msg: string, span: Span): never {

@@ -211,7 +211,7 @@ class Parser {
         let lhs = this.precParse(precIndex + 1)
 
         while (parser.includes(this.peek().kind)) {
-            const op = this.advance().kind
+            const op = this.advance()
             const rhs = this.precParse(precIndex + 1)
             lhs = {kind: 'Infix', lhs, op, rhs, span: this.closeSpan(begin)}
         }
@@ -224,7 +224,7 @@ class Parser {
         if (Parser.PREFIX_OPS.includes(this.peek().kind)) {
             const begin = this.peek().span
 
-            const op = this.advance().kind
+            const op = this.advance()
             const rhs = this.parsePrefix()
             return {kind: 'Prefix', op, rhs, span: this.closeSpan(begin)}
         }

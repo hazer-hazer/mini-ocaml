@@ -1,5 +1,5 @@
 import {MakeADT} from '../adt/adt'
-import {TokenKind, Token, Span} from './Token'
+import {Token, Span} from './Token'
 
 export type Expr = MakeADT<'kind', {
     Var: {
@@ -39,11 +39,11 @@ export type Expr = MakeADT<'kind', {
     }
     Infix: {
         lhs: Expr
-        op: TokenKind
+        op: Token
         rhs: Expr
     }
     Prefix: {
-        op: TokenKind
+        op: Token
         rhs: Expr
     }
     If: {
@@ -86,13 +86,13 @@ export const astToString = (n: Expr): string => {
         return `if ${astToString(n.cond)}\n  then ${astToString(n.ifBranch)}\n  else ${astToString(n.elseBranch!)}`
     }
     case 'Infix': {
-        return `${astToString(n.lhs)} ${Token.kindStr(n.op)} ${astToString(n.rhs)}`
+        return `${astToString(n.lhs)} ${Token.kindStr(n.op.kind)} ${astToString(n.rhs)}`
     }
     case 'List': {
         return `[${n.elements.map(el => astToString(el)).join(', ')}]`
     }
     case 'Prefix': {
-        return `${Token.kindStr(n.op)}${astToString(n.rhs)}`
+        return `${Token.kindStr(n.op.kind)}${astToString(n.rhs)}`
     }
     case 'Match': {
         return `match ${astToString(n.subj)} with\n |${
