@@ -3,7 +3,7 @@ import {Token, Span} from './Token'
 
 export type Expr = MakeADT<'kind', {
     Var: {
-        tok: string
+        tok: Token
     }
     BoolLit: {
         True: boolean
@@ -68,7 +68,7 @@ export const astToString = (n: Expr): string => {
         return `let ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
     }
     case 'Var': {
-        return n.tok
+        return n.tok.val
     }
     case 'BoolLit': {
         return n.True ? 'true' : 'false'

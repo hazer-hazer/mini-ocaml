@@ -66,11 +66,10 @@ const extendEnv = (env: Env, name: string, val: Value) => ({...env, [name]: val}
 
 export class Interpreter {
     envStack: Env[] = []
-    source: Source
+    source?: Source
 
-    constructor(env: Env, source: Source) {
+    constructor(env: Env) {
         this.enterEnv(env)
-        this.source = source
     }
 
     private backEnv() {
@@ -78,6 +77,7 @@ export class Interpreter {
     }
 
     private enterEnv(env: Env) {
+        console.log('enter env', envStr(env))
         this.envStack.push(env)
     }
 
@@ -85,7 +85,12 @@ export class Interpreter {
         this.envStack.pop()
     }
 
-    public interpret(expr: Expr): Value {
+    public interpretTopLevel(expr: Expr, source: Source): Value {
+        this.source = source
+        return this.interpret(expr)
+    }
+
+    private interpret(expr: Expr): Value {
         switch (expr.kind) {
         case 'Let': {
             this.enterEnv(extendEnv(this.backEnv(), expr.name, this.interpret(expr.val)))
@@ -226,11 +231,11 @@ export class Interpreter {
         }
     }
 
-    private lookup(name: string, env: Env): Value {
-        const val = env[name]
+    private lookup(name: Token, env: Env): Value {
+        const val = env[name.val]
 
         if (!val) {
-            throw new Error(`Cannot find variable ${name}`)
+            this.error(`Cannot find variable ${name}`, name.span)
         }
 
         return val

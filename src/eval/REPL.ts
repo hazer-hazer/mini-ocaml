@@ -4,7 +4,7 @@ import Lexer from '../parser/Lexer'
 import Parser from '../parser/Parser'
 import { TokenKind } from '../parser/Token'
 import { Settings } from '../settings'
-import { Env, Interpreter, Value, valueStr, } from './Interpreter'
+import { Env, Interpreter, Value, valueStr } from './Interpreter'
 
 export class REPL {
     env: Env
@@ -13,7 +13,7 @@ export class REPL {
     parser: Parser
     inter: Interpreter
     settings: Settings = {
-        debug: false
+        debug: false,
     }
 
     replServer?: REPLServer
@@ -51,12 +51,12 @@ export class REPL {
 
             const expr = this.parser.parse(tokens, source)
 
-            const result = this.inter.interpret(expr)
+            const result = this.inter.interpretTopLevel(expr, source)
 
             if (this.settings.debug) {
-                console.log('=== env ===');
+                console.log('=== env ===')
                 for (const [k, v] of Object.entries(this.inter.envStack[this.inter.envStack.length - 1])) {
-                    console.log(k, v);
+                    console.log(k, v)
                 }
             }
 

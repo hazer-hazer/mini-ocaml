@@ -267,7 +267,7 @@ class Parser {
         const begin = this.peek().span
 
         if (this.is(TokenKind.Ident)) {
-            const tok = this.advance().val
+            const tok = this.advance()
             return {kind: 'Var', tok, span: this.closeSpan(begin)}
         }
 
