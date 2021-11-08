@@ -56,6 +56,14 @@ export class Span {
     public str(): string {
         return `pos: ${this.pos}; len: ${this.len}`
     }
+
+    public getHighBound(): number {
+        return this.pos + this.len
+    }
+
+    public to(end: Span): Span {
+        return new Span(Math.min(this.pos, end.pos), Math.max(this.getHighBound(), end.getHighBound()))
+    }
 }
 
 export class Token {
@@ -81,12 +89,12 @@ export class Token {
 
     static readonly KIND_STR: Record<TokenKind, string> = {
         [TokenKind.Eof]: '[EOF]',
-    
+
         [TokenKind.Ident]: 'identifier',
 
         [TokenKind.IntLit]: 'integer',
         [TokenKind.String]: 'string',
-    
+
         [TokenKind.Plus]: '+',   // +
         [TokenKind.Minus]: '-',  // -
         [TokenKind.Mul]: '*',    // *
@@ -94,19 +102,19 @@ export class Token {
         [TokenKind.Eq]: '=',     // =
         [TokenKind.LT]: '<',     // <
         [TokenKind.GT]: '>',     // >
-    
+
         [TokenKind.Col]: ':',    // :
         [TokenKind.ColCol]: '::', // ::
-    
+
         [TokenKind.LParen]: '(', // (
         [TokenKind.RParen]: ')', // )
         [TokenKind.LBracket]: '[', // [
         [TokenKind.RBracket]: ']', // ]
-    
+
         [TokenKind.Arrow]: '->',  // ->
         [TokenKind.VBar]: '|',    // |
         [TokenKind.Comma]: ',',    // |
-    
+
         // Keywords //
         [TokenKind.True]: 'true',
         [TokenKind.False]: 'false',

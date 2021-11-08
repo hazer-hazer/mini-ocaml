@@ -1,5 +1,5 @@
 import {MakeADT} from '../adt/adt'
-import {TokenKind, Token} from './Token'
+import {TokenKind, Token, Span} from './Token'
 
 export type Expr = MakeADT<'kind', {
     Var: {
@@ -58,7 +58,9 @@ export type Expr = MakeADT<'kind', {
         expr: Expr
     }
     Unit: {}
-}>;
+}> & {
+    span: Span,
+};
 
 export const astToString = (n: Expr): string => {
     switch (n.kind) {

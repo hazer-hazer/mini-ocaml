@@ -1,6 +1,7 @@
-import { MakeADT } from "../adt/adt"
-import { astToString, Expr } from "../parser/Node"
-import { Token, TokenKind } from "../parser/Token"
+import { MakeADT } from '../adt/adt'
+import { astToString, Expr } from '../parser/Node'
+import {Span, Token, TokenKind} from '../parser/Token'
+import {Source} from '../parser/Source'
 
 export type Env = Record<string, Value>
 
@@ -61,7 +62,7 @@ export const envStr = (env: Env): string => {
     for (const [name, val] of Object.entries(env)) {
         str += `${mult ? '  ' : ''}${name}: ${valueStr(val)}`
     }
-    return str + (mult ? '\n' : '') + '}' 
+    return str + (mult ? '\n' : '') + '}'
 }
 
 export const valueStr = (val: Value): string => {
@@ -91,9 +92,11 @@ const extendEnv = (env: Env, name: string, val: Value) => ({...env, [name]: val}
 
 export class Interpreter {
     envStack: Env[] = []
+    source: Source
 
-    constructor(env: Env) {
+    constructor(env: Env, source: Source) {
         this.enterEnv(env)
+        this.source = source
     }
 
     private backEnv() {
@@ -149,7 +152,7 @@ export class Interpreter {
         case 'If': {
             const cond = this.interpret(expr.cond)
             if (cond.type !== 'Bool') {
-                throw new Error(`'if' condition must be of boolean type`)
+                throw new Error('\'if\' condition must be of boolean type')
             }
             if (cond.val) {
                 return this.interpret(expr.ifBranch)
@@ -163,7 +166,7 @@ export class Interpreter {
             return this.evalInfix(expr.op, lhs, rhs)
         }
         case 'Tuple': {
-            let values = []
+            const values = []
             for (const el of expr.elements) {
                 values.push(this.interpret(el))
             }
@@ -187,7 +190,7 @@ export class Interpreter {
             return val
         }
         case 'Match': {
-            throw new Error(`Not implemented`)
+            throw new Error('Not implemented')
         }
         case 'List': {
             const values = []
@@ -249,18 +252,25 @@ export class Interpreter {
         }
         case TokenKind.Head: {
             if (rhs.type !== 'List') {
-                throw new Error(`'head' operator requires list`)
+                throw new Error('\'head\' operator requires list')
             }
             return rhs.values[0]
         }
         case TokenKind.Tail: {
             if (rhs.type !== 'List') {
-                throw new Error(`'tail' operator requires list`)
+                throw new Error('\'tail\' operator requires list')
             }
             return {type: 'List', values: rhs.values.slice(1)}
         }
         }
 
         throw new Error(`Invalid prefix operator ${Token.kindStr(op)}`)
+    }
+
+    private error(msg: string, span: Span): never {
+        const {pos: linePos, content: line} = this.source!.getSpanLine(span)
+        const pointer = `${' '.repeat(span.pos - linePos)}^`
+
+        throw new Error(`\n${line}\n${pointer} ${msg}`)
     }
 }
