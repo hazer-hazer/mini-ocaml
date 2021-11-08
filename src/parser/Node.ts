@@ -62,54 +62,79 @@ export type Expr = MakeADT<'kind', {
     span: Span,
 };
 
-export const astToString = (n: Expr): string => {
+export const astToString = (n: Expr, precDebug = true): string => {
+    let str = ''
+
+    if (precDebug) {
+        str += '('
+    }
+
     switch (n.kind) {
     case 'Let': {
-        return `let ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
+        str += `let ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
+        break
     }
     case 'Var': {
-        return n.tok.val
+        str += n.tok.val
+        break
     }
     case 'BoolLit': {
-        return n.True ? 'true' : 'false'
+        str += n.True ? 'true' : 'false'
+        break
     }
     case 'IntLit': {
-        return n.tok.val
+        str += n.tok.val
+        break
     }
     case 'Func': {
-        return `func ${n.param} -> ${astToString(n.body)}`
+        str += `func ${n.param} -> ${astToString(n.body)}`
+        break
     }
     case 'App': {
-        return `${astToString(n.lhs)} ${astToString(n.arg)}`
+        str += `${astToString(n.lhs)} ${astToString(n.arg)}`
+        break
     }
     case 'If': {
-        return `if ${astToString(n.cond)}\n  then ${astToString(n.ifBranch)}\n  else ${astToString(n.elseBranch!)}`
+        str += `if ${astToString(n.cond)}\n  then ${astToString(n.ifBranch)}\n  else ${astToString(n.elseBranch!)}`
+        break
     }
     case 'Infix': {
-        return `${astToString(n.lhs)} ${Token.kindStr(n.op.kind)} ${astToString(n.rhs)}`
+        str += `${astToString(n.lhs)} ${Token.kindStr(n.op.kind)} ${astToString(n.rhs)}`
+        break
     }
     case 'List': {
-        return `[${n.elements.map(el => astToString(el)).join(', ')}]`
+        str += `[${n.elements.map(el => astToString(el)).join(', ')}]`
+        break
     }
     case 'Prefix': {
-        return `${Token.kindStr(n.op.kind)}${astToString(n.rhs)}`
+        str += `${Token.kindStr(n.op.kind)}${astToString(n.rhs)}`
+        break
     }
     case 'Match': {
-        return `match ${astToString(n.subj)} with\n |${
-            n.with.map(el => `${astToString(el[0])} -> ${astToString(el[1])}`).join('\n| ')
-        }`
+        str += `match ${astToString(n.subj)} with\n |${n.with.map(el => `${astToString(el[0])} -> ${astToString(el[1])}`).join('\n| ')}`
+        break
     }
     case 'LetRec': {
-        return `let rec ${n.func} ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
+        str += `let rec ${n.func} ${n.name} = ${astToString(n.val)} in ${astToString(n.body)}`
+        break
     }
     case 'Paren': {
-        return `(${astToString(n.expr)})`
+        str += `(${astToString(n.expr)})`
+        break
     }
     case 'Tuple': {
-        return `(${n.elements.map(el => astToString(el)).join(', ')})`
+        str += `(${n.elements.map(el => astToString(el)).join(', ')})`
+        break
     }
     case 'Unit': {
-        return '()'
+        str += '()'
+        break
     }
     }
+
+    if (precDebug) {
+        str += ')'
+    }
+
+    return str
 }

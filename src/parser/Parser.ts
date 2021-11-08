@@ -102,29 +102,15 @@ class Parser {
     }
 
     private parseExpr(): Expr {
-        let lhs: Expr | null = null
-
-        const begin = this.peek().span
-
         if (this.is(TokenKind.Func)) {
-            lhs = this.parseFunc()
+            return this.parseFunc()
         } else if (this.is(TokenKind.Let)) {
-            lhs = this.parseLet()
+            return this.parseLet()
         } else if (this.is(TokenKind.If)) {
-            lhs = this.parseIf()
+            return this.parseIf()
         } else {
-            lhs = this.precParse(0)
+            return this.precParse(0)
         }
-
-        if (lhs && this.isPrimaryFirst()) {
-            const arg = this.parsePrimary()
-
-            if (arg) {
-                lhs = {kind: 'App', lhs: lhs!, arg: arg!, span: this.closeSpan(begin)}
-            }
-        }
-
-        return lhs!
     }
 
     private parseFunc(): Expr {
@@ -264,20 +250,22 @@ class Parser {
     }
 
     private parsePrimary(): Expr {
+        let lhs: Expr | null = null
+
         if (this.is(TokenKind.Ident)) {
             const tok = this.advance()
-            return {kind: 'Var', tok, span: tok.span}
+            lhs = {kind: 'Var', tok, span: tok.span}
         }
 
         if (this.is(TokenKind.IntLit)) {
             const tok = this.advance()
-            return {kind: 'IntLit', tok, span: tok.span}
+            lhs = {kind: 'IntLit', tok, span: tok.span}
         }
 
         if (this.is(TokenKind.True) || this.is(TokenKind.False)) {
             const span = this.peek().span
             const True = this.advance().kind === TokenKind.True
-            return {kind: 'BoolLit', True, span}
+            lhs = {kind: 'BoolLit', True, span}
         }
 
         const begin = this.peek().span
@@ -285,7 +273,7 @@ class Parser {
         if (this.is(TokenKind.LBracket)) {
             const {elements} = this.parseDelim(TokenKind.LBracket, TokenKind.RBracket, true)
 
-            return {kind: 'List', elements, span: this.closeSpan(begin)}
+            lhs = {kind: 'List', elements, span: this.closeSpan(begin)}
         }
 
         if (this.is(TokenKind.LParen)) {
@@ -293,15 +281,27 @@ class Parser {
             const {elements, trailingComma} = this.parseDelim(TokenKind.LParen, TokenKind.RParen, true)
 
             if (elements.length === 0) {
-                return {kind: 'Unit', span: this.closeSpan(begin)}
+                lhs = {kind: 'Unit', span: this.closeSpan(begin)}
             } else if (trailingComma || elements.length > 1) {
-                return {kind: 'Tuple', elements, span: this.closeSpan(begin)}
+                lhs = {kind: 'Tuple', elements, span: this.closeSpan(begin)}
             }
 
-            return {kind: 'Paren', expr: elements[0], span: this.closeSpan(begin)}
+            lhs = {kind: 'Paren', expr: elements[0], span: this.closeSpan(begin)}
         }
 
-        this.error(`Unexpected token ${this.peek()}`)
+        if (lhs && this.isPrimaryFirst()) {
+            const arg = this.parsePrimary()
+
+            if (arg) {
+                lhs = {kind: 'App', lhs: lhs!, arg: arg!, span: this.closeSpan(begin)}
+            }
+        }
+
+        if (!lhs) {
+            this.error(`Unexpected token ${this.peek()}`)
+        }
+
+        return lhs
     }
 
     // private parseOptPrimary(): Expr | null {

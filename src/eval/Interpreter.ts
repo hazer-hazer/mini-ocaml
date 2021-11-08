@@ -78,9 +78,11 @@ export class Interpreter {
 
     private enterEnv(env: Env) {
         this.envStack.push(env)
+        console.log('enter env', this.backEnv())
     }
 
     private exitEnv() {
+        console.log('exit env', this.backEnv())
         this.envStack.pop()
     }
 
@@ -101,7 +103,7 @@ export class Interpreter {
             return result
         }
         case 'Var': {
-            return this.lookup(expr.tok, this.backEnv())
+            return this.lookup(expr.tok)
         }
         case 'BoolLit': {
             return {type: 'Bool', val: expr.True}
@@ -230,15 +232,21 @@ export class Interpreter {
         }
     }
 
-    private lookup(name: Token, env: Env): Value {
-        const val = env[name.val]
+    private lookup(name: Token): Value {
+        let envIndex = this.envStack.length - 1
+        let env = this.backEnv()
 
-        if (!val) {
-            console.log('env:', envStr(this.backEnv()))
-            this.error(`Cannot find variable ${name}`, name.span)
+        while (env) {
+            const val = env[name.val]
+
+            if (val !== undefined) {
+                return val
+            }
+
+            env = this.envStack[--envIndex]
         }
 
-        return val
+        this.error(`Cannot find variable ${name}`, name.span)
     }
 
     toInt(val: Value, span: Span): number {
