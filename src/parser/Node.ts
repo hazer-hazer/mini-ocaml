@@ -9,7 +9,7 @@ export type Expr = MakeADT<'kind', {
         True: boolean
     }
     IntLit: {
-        tok: string
+        tok: Token
     }
     Let: {
         name: string
@@ -74,7 +74,7 @@ export const astToString = (n: Expr): string => {
         return n.True ? 'true' : 'false'
     }
     case 'IntLit': {
-        return n.tok
+        return n.tok.val
     }
     case 'Func': {
         return `func ${n.param} -> ${astToString(n.body)}`

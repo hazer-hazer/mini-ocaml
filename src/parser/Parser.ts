@@ -264,22 +264,23 @@ class Parser {
     }
 
     private parsePrimary(): Expr {
-        const begin = this.peek().span
-
         if (this.is(TokenKind.Ident)) {
             const tok = this.advance()
-            return {kind: 'Var', tok, span: this.closeSpan(begin)}
+            return {kind: 'Var', tok, span: tok.span}
         }
 
         if (this.is(TokenKind.IntLit)) {
-            const tok = this.advance().val
-            return {kind: 'IntLit', tok, span: this.closeSpan(begin)}
+            const tok = this.advance()
+            return {kind: 'IntLit', tok, span: tok.span}
         }
 
         if (this.is(TokenKind.True) || this.is(TokenKind.False)) {
+            const span = this.peek().span
             const True = this.advance().kind === TokenKind.True
-            return {kind: 'BoolLit', True, span: this.closeSpan(begin)}
+            return {kind: 'BoolLit', True, span}
         }
+
+        const begin = this.peek().span
 
         if (this.is(TokenKind.LBracket)) {
             const {elements} = this.parseDelim(TokenKind.LBracket, TokenKind.RBracket, true)
@@ -315,11 +316,7 @@ class Parser {
     }
 
     private error(msg: string): never {
-        const span = this.peek().span
-        const {pos: linePos, content: line} = this.source!.getSpanLine(span)
-        const pointer = `${' '.repeat(span.pos - linePos)}^`
-
-        throw new Error(`\n${line}\n${pointer} ${msg}`)
+        throw new Error(`${this.source?.getPointerLine(msg, this.peek().span)}`)
     }
 }
 

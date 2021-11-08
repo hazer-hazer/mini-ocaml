@@ -45,4 +45,11 @@ export class Source {
 
         return lines[0]
     }
+
+    public getPointerLine(msg: string, span: Span): string {
+        const {pos: linePos, content: line} = this.getSpanLine(span)
+        const pointer = `${' '.repeat(span.pos - linePos)}${'^'.repeat(span.len)}`
+
+        return `   ${line}\n${pointer} ${msg}`
+    }
 }

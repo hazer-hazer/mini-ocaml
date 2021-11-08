@@ -77,7 +77,6 @@ export class Interpreter {
     }
 
     private enterEnv(env: Env) {
-        console.log('enter env', envStr(env))
         this.envStack.push(env)
     }
 
@@ -108,7 +107,7 @@ export class Interpreter {
             return {type: 'Bool', val: expr.True}
         }
         case 'IntLit': {
-            return {type: 'Int', val: Number(expr.tok)}
+            return {type: 'Int', val: Number(expr.tok.val)}
         }
         case 'Func': {
             return {type: 'Closure', name: AnonTag, param: expr.param, body: expr.body, env: this.backEnv()}
@@ -268,9 +267,6 @@ export class Interpreter {
     }
 
     private error(msg: string, span: Span): never {
-        const {pos: linePos, content: line} = this.source!.getSpanLine(span)
-        const pointer = `${' '.repeat(span.pos - linePos)}^`
-
-        throw new Error(`\n${line}\n${pointer} ${msg}`)
+        throw new Error(`${this.source?.getPointerLine(msg, span)}`)
     }
 }
