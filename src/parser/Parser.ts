@@ -251,32 +251,23 @@ class Parser {
 
     private parsePrimary(): Expr {
         let lhs: Expr | null = null
+        const begin = this.peek().span
 
         if (this.is(TokenKind.Ident)) {
             const tok = this.advance()
             lhs = {kind: 'Var', tok, span: tok.span}
-        }
-
-        if (this.is(TokenKind.IntLit)) {
+        } else if (this.is(TokenKind.IntLit)) {
             const tok = this.advance()
             lhs = {kind: 'IntLit', tok, span: tok.span}
-        }
-
-        if (this.is(TokenKind.True) || this.is(TokenKind.False)) {
+        } else if (this.is(TokenKind.True) || this.is(TokenKind.False)) {
             const span = this.peek().span
             const True = this.advance().kind === TokenKind.True
             lhs = {kind: 'BoolLit', True, span}
-        }
-
-        const begin = this.peek().span
-
-        if (this.is(TokenKind.LBracket)) {
+        } else if (this.is(TokenKind.LBracket)) {
             const {elements} = this.parseDelim(TokenKind.LBracket, TokenKind.RBracket, true)
 
             lhs = {kind: 'List', elements, span: this.closeSpan(begin)}
-        }
-
-        if (this.is(TokenKind.LParen)) {
+        } else if (this.is(TokenKind.LParen)) {
             const begin = this.peek().span
             const {elements, trailingComma} = this.parseDelim(TokenKind.LParen, TokenKind.RParen, true)
 

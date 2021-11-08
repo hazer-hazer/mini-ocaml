@@ -78,11 +78,9 @@ export class Interpreter {
 
     private enterEnv(env: Env) {
         this.envStack.push(env)
-        console.log('enter env', this.backEnv())
     }
 
     private exitEnv() {
-        console.log('exit env', this.backEnv())
         this.envStack.pop()
     }
 
