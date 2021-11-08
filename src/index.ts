@@ -1,5 +1,6 @@
-import { REPL } from "./eval/REPL"
+import { REPL } from './eval/REPL'
 
-const repl = new REPL()
-
-repl.run()
+(async () => {
+    const repl = new REPL()
+    await repl.run()
+})()

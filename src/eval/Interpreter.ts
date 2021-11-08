@@ -234,6 +234,7 @@ export class Interpreter {
         const val = env[name.val]
 
         if (!val) {
+            console.log('env:', envStr(this.backEnv()))
             this.error(`Cannot find variable ${name}`, name.span)
         }
 

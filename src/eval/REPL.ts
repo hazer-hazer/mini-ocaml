@@ -63,7 +63,7 @@ export class REPL {
             cb(null, result ? valueStr(result) : '')
         } catch (e) {
             this.replServer!.clearBufferedCommand()
-            console.error('\u001b[31m', (e as Error).message, '\u001b[0m')
+            console.error('\u001b[31m' + (e as Error).message + '\u001b[0m')
             cb(null, undefined)
         }
     }
