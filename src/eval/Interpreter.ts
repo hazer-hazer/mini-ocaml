@@ -3,7 +3,10 @@ import { astToString, Expr } from '../parser/Node'
 import {Span, Token, TokenKind} from '../parser/Token'
 import {Source} from '../parser/Source'
 
-export type Env = Record<string, Value>
+export class Env {
+    names: Record<string, Value>
+    parent?: Env
+}
 
 export class AnonTagClass {}
 const AnonTag = new AnonTagClass
