@@ -49,9 +49,17 @@ class Result<T, E> {
         return Err(this.inner as E)
     }
 
-    public andThen<U>(other: (val: T) => Result<U, E>) {
+    public andThen<U>(op: (val: T) => Result<U, E>) {
         if (this.ok()) {
-            return other(this.inner as T)
+            return op(this.inner as T)
+        }
+
+        return Err(this.inner as E)
+    }
+
+    public map<U>(op: (val: T) => Result<U, E>) {
+        if (this.ok()) {
+            return op(this.inner as T)
         }
 
         return Err(this.inner as E)
@@ -108,5 +116,22 @@ class And<I, O1, O2, E> extends Parser<I, [O1, O2], E> {
         }
 
         return Ok({input, output: [lRes.unwrap().output, rRes.unwrap().output]})
+    }
+}
+
+export const delimited = <I, O1, O2, O3, E>(begin: Parser<I, O1, E>, delim: Parser<I, O2, E>, end: Parser<I, O2, E>) =>
+    (input: I) => {
+        const beginRes = begin.parse(input)
+        if (beginRes.err()) return Err(beginRes.unwrapErr())
+
+        const delimRes = delim.parse(beginRes.unwrap().input)
+        if (delimRes.err()) return Err(delimRes.unwrapErr())
+
+        return end.parse(delimRes.unwrap().input).map(({input}) => Ok({input, output: delimRes.unwrap().output}))
+    }
+
+export const tag = <T, I, E>(s: string): ParseResult<I, I, E> => {
+    return (i: I) => {
+        if (i)
     }
 }
