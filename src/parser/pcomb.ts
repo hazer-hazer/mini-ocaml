@@ -129,9 +129,3 @@ export const delimited = <I, O1, O2, O3, E>(begin: Parser<I, O1, E>, delim: Pars
 
         return end.parse(delimRes.unwrap().input).map(({input}) => Ok({input, output: delimRes.unwrap().output}))
     }
-
-export const tag = <T, I, E>(s: string): ParseResult<I, I, E> => {
-    return (i: I) => {
-        if (i)
-    }
-}

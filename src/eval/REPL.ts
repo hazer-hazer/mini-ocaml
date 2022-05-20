@@ -4,6 +4,7 @@ import Lexer from '../parser/Lexer'
 import Parser from '../parser/Parser'
 import { TokenKind } from '../parser/Token'
 import { Settings } from '../settings'
+import { analyze, TypeEnv } from '../typeck/typeck'
 import { Env, Interpreter, Value, valueStr } from './Interpreter'
 
 export class REPL {
@@ -50,6 +51,8 @@ export class REPL {
             }
 
             const expr = this.parser.parse(tokens, source)
+
+            analyze(expr, new TypeEnv({}), new Set())
 
             const result = this.inter.interpretTopLevel(expr, source)
 
