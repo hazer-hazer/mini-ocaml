@@ -62,6 +62,18 @@ export const valueStr = (val: Value): string => {
     }
 }
 
+export const valueDisplay = (val: Value): boolean | number | string => {
+    switch (val.type) {
+    case 'Bool':
+    case 'Int': {
+        return val.val
+    }
+    default: {
+        return valueStr(val)
+    }
+    }
+}
+
 const extendEnv = (env: Env, name: string, val: Value) => ({...env, [name]: val})
 
 export class Interpreter {

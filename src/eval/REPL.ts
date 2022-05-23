@@ -5,7 +5,7 @@ import Parser from '../parser/Parser'
 import { TokenKind } from '../parser/Token'
 import { Settings } from '../settings'
 import { analyze, TypeEnv } from '../typeck/typeck'
-import { Env, Interpreter, Value, valueStr } from './Interpreter'
+import { Env, Interpreter, Value, valueDisplay, valueStr } from './Interpreter'
 
 export class REPL {
     env: Env
@@ -63,7 +63,7 @@ export class REPL {
                 }
             }
 
-            cb(null, result ? valueStr(result) : '')
+            cb(null, result ? valueDisplay(result) : '')
         } catch (e) {
             this.replServer!.clearBufferedCommand()
             console.error('\u001b[31m' + (e as Error).message + '\u001b[0m')

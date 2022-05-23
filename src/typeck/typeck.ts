@@ -34,13 +34,17 @@ class TypeVar extends Type {
 
         return false
     }
-    
+
     occursInList(list: Type[]): boolean {
         return list.some(t => this.occursIn(t))
     }
 
-    isGeneric(nonGenerics: NonGen): boolean {
-        return !this.occursInList(Array.from(nonGenerics))
+    isGeneric(nonGeneric: NonGen): boolean {
+        return !this.occursInList(Array.from(nonGeneric))
+    }
+
+    toString() {
+        return `${this.name}: ${this.instance}`
     }
 }
 
@@ -52,30 +56,42 @@ class TypeOp extends Type {
     public static IntTy = new TypeOp('int', [])
     public static BoolTy = new TypeOp('bool', [])
     public static mkFuncTy = (arg: Type, ret: Type) => new TypeOp('->', [arg, ret])
+
+    toString() {
+        if (this.args.length === 0) {
+            return `${this.name}`
+        }
+
+        if (this.args.length === 2) {
+            return `${this.args[0]} ${this.name} ${this.args[1]}`
+        }
+
+        return `${this.name} ${this.args.join(' ')}`
+    }
 }
 
 export class TypeEnv {
     constructor(public map: Record<string, Type>) {}
 
     extend(name: string, ty: Type): TypeEnv {
-        return new TypeEnv({...this.map, name: ty})
+        return new TypeEnv({...this.map, [name]: ty})
     }
 
-    getFresh(name: string, nonGenerics: NonGen): Type {
+    getFresh(name: string, nonGeneric: NonGen): Type {
         if (name in this.map) {
-            return fresh(this.map[name], nonGenerics)
+            return fresh(this.map[name], nonGeneric)
         }
         throw new Error(`${name} is not defined`)
     }
 }
 
-function fresh(type: Type, nonGenerics: NonGen): Type {
+function fresh(type: Type, nonGeneric: NonGen): Type {
     const map: WeakMap<Type, Type> = new WeakMap()
 
     function freshrec(ty: Type): Type {
         const t = ty.pruned
         if (t instanceof TypeVar) {
-            if (t.isGeneric(nonGenerics)) {
+            if (t.isGeneric(nonGeneric)) {
                 if (!map.has(t)) {
                     map.set(t, new TypeVar())
                 }
@@ -114,12 +130,12 @@ function unify(ty1: Type, ty2: Type) {
     }
 }
 
-export function analyze(expr: Expr, env: TypeEnv, nonGenerics: NonGen): Type {
-    const analyzeNode = (e: Expr) => analyze(e, env, nonGenerics)
+export function analyze(expr: Expr, env: TypeEnv, nonGeneric: NonGen): Type {
+    const analyzeNode = (e: Expr) => analyze(e, env, nonGeneric)
 
     switch (expr.kind) {
     case 'Var': {
-        return env.getFresh(expr.tok.val, nonGenerics)
+        return env.getFresh(expr.tok.val, nonGeneric)
     }
     case 'App': {
         const funcTy = analyzeNode(expr.lhs)
@@ -133,17 +149,17 @@ export function analyze(expr: Expr, env: TypeEnv, nonGenerics: NonGen): Type {
         const valTy = analyzeNode(expr.val)
         const newEnv = env.extend(expr.name, valTy)
 
-        return analyze(expr.body, newEnv, nonGenerics)
+        return analyze(expr.body, newEnv, nonGeneric)
     }
     case 'LetRec': {
         const newTy = new TypeVar()
         const newEnv = env.extend(expr.name, newTy)
-        const newGenerics = new Set(Array.from(nonGenerics).concat(newTy))
+        const newGenerics = new Set(Array.from(nonGeneric).concat(newTy))
         const valTy = analyze(expr.val, newEnv, newGenerics)
         
         unify(newTy, valTy)
 
-        return analyze(expr.body, newEnv, nonGenerics)
+        return analyze(expr.body, newEnv, nonGeneric)
     }
     case 'IntLit': {
         return TypeOp.IntTy
@@ -152,7 +168,7 @@ export function analyze(expr: Expr, env: TypeEnv, nonGenerics: NonGen): Type {
         return TypeOp.BoolTy
     }
     default: {
-        throw new Error(`Unhandled kind ${expr.kind} in \'analyze\'`)
+        throw new Error(`Unhandled kind ${expr.kind} in 'analyze'`)
     }
     }
 }
