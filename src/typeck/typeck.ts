@@ -147,6 +147,13 @@ export function analyze(expr: Expr, env: TypeEnv, nonGeneric: NonGen): Type {
         unify(TypeOp.mkFuncTy(argTy, retTy), funcTy)
         return retTy
     }
+    case 'Func': {
+        const paramTy = new TypeVar()
+        const newEnv = env.extend(expr.param.val, paramTy)
+        const newGeneric = new Set(Array.from(nonGeneric).concat(paramTy))
+        const retTy = analyze(expr.body, newEnv, newGeneric)
+        return TypeOp.mkFuncTy(paramTy, retTy)
+    }
     case 'Let': {
         const valTy = analyzeNode(expr.val)
         const newEnv = env.extend(expr.name.val, valTy)
