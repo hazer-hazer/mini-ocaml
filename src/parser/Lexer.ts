@@ -31,6 +31,13 @@ class Lexer {
         return cur
     }
 
+    private skip(char: string) {
+        if (this.peek() !== char) {
+            this.error(`Expected ${char}`)
+        }
+        this.advance()
+    }
+
     private lookup(): string {
         return this.source![this.index + 1]
     }
@@ -196,6 +203,23 @@ class Lexer {
         }
         case ',': {
             this.addTokenAdv(TokenKind.Comma)
+            break
+        }
+        case '\'': {
+            this.advance()
+            const char = this.peek()
+            this.skip('\'')
+            this.addToken(TokenKind.Char, char)
+            break
+        }
+        case '"': {
+            this.advance()
+            let str = ''
+            do {
+                str += this.advance()
+            } while (this.peek() !== '"')
+            this.addToken(TokenKind.String, str)
+            this.skip('"')
             break
         }
         default: {

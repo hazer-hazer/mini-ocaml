@@ -36,6 +36,8 @@ class Parser {
     static readonly PRIMARIES_FIRST: TokenKind[] = [
         TokenKind.Ident,
         TokenKind.IntLit,
+        TokenKind.Char,
+        TokenKind.String,
         TokenKind.True,
         TokenKind.False,
         TokenKind.LBracket,
@@ -118,7 +120,7 @@ class Parser {
 
         this.skip(TokenKind.Func)
 
-        const param = this.skip(TokenKind.Ident).val
+        const param = this.skip(TokenKind.Ident)
 
         this.skip(TokenKind.Arrow)
 
@@ -135,8 +137,8 @@ class Parser {
         if (this.is(TokenKind.Rec)) {
             this.skip(TokenKind.Rec)
 
-            const func = this.skip(TokenKind.Ident).val
-            const name = this.skip(TokenKind.Ident).val
+            const func = this.skip(TokenKind.Ident)
+            const name = this.skip(TokenKind.Ident)
 
             this.skip(TokenKind.Eq)
 
@@ -149,7 +151,7 @@ class Parser {
             return {kind: 'LetRec', func, name, val, body, span: this.closeSpan(begin)}
         }
 
-        const name = this.skip(TokenKind.Ident).val
+        const name = this.skip(TokenKind.Ident)
 
         this.skip(TokenKind.Eq)
 
@@ -261,8 +263,14 @@ class Parser {
             lhs = {kind: 'IntLit', tok, span: tok.span}
         } else if (this.is(TokenKind.True) || this.is(TokenKind.False)) {
             const span = this.peek().span
-            const True = this.advance().kind === TokenKind.True
-            lhs = {kind: 'BoolLit', True, span}
+            const val = this.advance()
+            lhs = {kind: 'BoolLit', val, span}
+        } else if (this.is(TokenKind.String)) {
+            const tok = this.advance()
+            lhs = {kind: 'StringLit', tok, span: tok.span}
+        } else if (this.is(TokenKind.Char)) {
+            const tok = this.advance()
+            lhs = {kind: 'CharLit', tok, span: tok.span}
         } else if (this.is(TokenKind.LBracket)) {
             const {elements} = this.parseDelim(TokenKind.LBracket, TokenKind.RBracket, true)
 

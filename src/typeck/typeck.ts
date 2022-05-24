@@ -55,6 +55,8 @@ class TypeOp extends Type {
 
     public static IntTy = new TypeOp('int', [])
     public static BoolTy = new TypeOp('bool', [])
+    public static CharTy = new TypeOp('char', [])
+    public static StringTy = new TypeOp('str', [])
     public static mkFuncTy = (arg: Type, ret: Type) => new TypeOp('->', [arg, ret])
 
     toString() {
@@ -147,13 +149,13 @@ export function analyze(expr: Expr, env: TypeEnv, nonGeneric: NonGen): Type {
     }
     case 'Let': {
         const valTy = analyzeNode(expr.val)
-        const newEnv = env.extend(expr.name, valTy)
+        const newEnv = env.extend(expr.name.val, valTy)
 
         return analyze(expr.body, newEnv, nonGeneric)
     }
     case 'LetRec': {
         const newTy = new TypeVar()
-        const newEnv = env.extend(expr.name, newTy)
+        const newEnv = env.extend(expr.name.val, newTy)
         const newGenerics = new Set(Array.from(nonGeneric).concat(newTy))
         const valTy = analyze(expr.val, newEnv, newGenerics)
         
@@ -166,6 +168,12 @@ export function analyze(expr: Expr, env: TypeEnv, nonGeneric: NonGen): Type {
     }
     case 'BoolLit': {
         return TypeOp.BoolTy
+    }
+    case 'CharLit': {
+        return TypeOp.CharTy
+    }
+    case 'StringLit': {
+        return TypeOp.StringTy
     }
     default: {
         throw new Error(`Unhandled kind ${expr.kind} in 'analyze'`)

@@ -1,29 +1,35 @@
 import {MakeADT} from '../adt/adt'
-import {Token, Span} from './Token'
+import {Token, Span, TokenKind} from './Token'
 
 export type Expr = MakeADT<'kind', {
     Var: {
         tok: Token
     }
     BoolLit: {
-        True: boolean
+        val: Token
     }
     IntLit: {
         tok: Token
     }
+    CharLit: {
+        tok: Token
+    }
+    StringLit: {
+        tok: Token
+    }
     Let: {
-        name: string
+        name: Token
         val: Expr
         body: Expr
     }
     LetRec: {
-        func: string
-        name: string
+        func: Token
+        name: Token
         val: Expr
         body: Expr
     }
     Func: {
-        param: string
+        param: Token
         body: Expr
     }
     App: {
@@ -57,6 +63,7 @@ export type Expr = MakeADT<'kind', {
     Paren: {
         expr: Expr
     }
+    // eslint-disable-next-line @typescript-eslint/ban-types
     Unit: {}
 }> & {
     span: Span,
@@ -79,7 +86,7 @@ export const astToString = (n: Expr, precDebug = true): string => {
         break
     }
     case 'BoolLit': {
-        str += n.True ? 'true' : 'false'
+        str += n.val.kind === TokenKind.True ? 'true' : 'false'
         break
     }
     case 'IntLit': {

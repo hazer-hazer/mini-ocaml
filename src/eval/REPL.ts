@@ -1,4 +1,4 @@
-import repl, { REPLServer } from 'repl'
+import repl, { REPLServer, REPLWriter } from 'repl'
 import { Context } from 'vm'
 import Lexer from '../parser/Lexer'
 import Parser from '../parser/Parser'
@@ -32,9 +32,11 @@ export class REPL {
     }
 
     public run() {
+        // Custom writer gives output without quotes
         this.replServer = repl.start({
             prompt: '> ',
             eval: this.loop.bind(this),
+            writer: obj => obj,
         })
     }
 
@@ -52,7 +54,7 @@ export class REPL {
 
             const expr = this.parser.parse(tokens, source)
 
-            analyze(expr, new TypeEnv({}), new Set())
+            const ty = analyze(expr, new TypeEnv({}), new Set())
 
             const result = this.inter.interpretTopLevel(expr, source)
 
@@ -63,7 +65,7 @@ export class REPL {
                 }
             }
 
-            cb(null, result ? valueDisplay(result) : '')
+            cb(null, `${result ? valueDisplay(result) : ''}: ${ty}`)
         } catch (e) {
             this.replServer!.clearBufferedCommand()
             console.error('\u001b[31m' + (e as Error).message + '\u001b[0m')

@@ -4,6 +4,7 @@ export enum TokenKind {
     Ident,
 
     IntLit,
+    Char,
     String,
 
     Plus,   // +
@@ -93,6 +94,7 @@ export class Token {
         [TokenKind.Ident]: 'identifier',
 
         [TokenKind.IntLit]: 'integer',
+        [TokenKind.Char]: 'char',
         [TokenKind.String]: 'string',
 
         [TokenKind.Plus]: '+',   // +

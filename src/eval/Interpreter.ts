@@ -9,18 +9,25 @@ export class AnonTagClass {}
 const AnonTag = new AnonTagClass
 
 export type Value = MakeADT<'type', {
+    // eslint-disable-next-line @typescript-eslint/ban-types
     Unit: {}
     Int: {
         val: number
+    }
+    Char: {
+        val: string
+    }
+    String: {
+        val: string
     }
     Bool: {
         val: boolean
     }
     List: {
-        values: any[] // Cannot use `Value` as it causes cyclic reference issue
+        values: Value[] // Cannot use `Value` as it causes cyclic reference issue
     }
     Tuple: {
-        values: any[]
+        values: Value[]
     }
     Closure: {
         name: string | AnonTagClass
@@ -47,6 +54,10 @@ export const valueStr = (val: Value): string => {
     case 'Int': {
         return val.val.toString()
     }
+    case 'Char':
+    case 'String': {
+        return val.val
+    }
     case 'List': {
         return `[${val.values.map(el => valueStr(el)).join(', ')}]`
     }
@@ -67,6 +78,12 @@ export const valueDisplay = (val: Value): boolean | number | string => {
     case 'Bool':
     case 'Int': {
         return val.val
+    }
+    case 'Char': {
+        return `'${val.val}'`
+    }
+    case 'String': {
+        return `"${val.val}"`
     }
     default: {
         return valueStr(val)
@@ -104,7 +121,7 @@ export class Interpreter {
     private interpret(expr: Expr): Value {
         switch (expr.kind) {
         case 'Let': {
-            this.enterEnv(extendEnv(this.backEnv(), expr.name, this.interpret(expr.val)))
+            this.enterEnv(extendEnv(this.backEnv(), expr.name.val, this.interpret(expr.val)))
 
             const result = this.interpret(expr.body)
 
@@ -116,13 +133,19 @@ export class Interpreter {
             return this.lookup(expr.tok)
         }
         case 'BoolLit': {
-            return {type: 'Bool', val: expr.True}
+            return {type: 'Bool', val: expr.val.kind === TokenKind.True}
         }
         case 'IntLit': {
             return {type: 'Int', val: Number(expr.tok.val)}
         }
+        case 'CharLit': {
+            return {type: 'Char', val: expr.tok.val}
+        }
+        case 'StringLit': {
+            return {type: 'String', val: expr.tok.val}
+        }
         case 'Func': {
-            return {type: 'Closure', name: AnonTag, param: expr.param, body: expr.body, env: this.backEnv()}
+            return {type: 'Closure', name: AnonTag, param: expr.param.val, body: expr.body, env: this.backEnv()}
         }
         case 'App': {
             const lhs = this.interpret(expr.lhs)
@@ -196,9 +219,9 @@ export class Interpreter {
             return {type: 'Unit'}
         }
         case 'LetRec': {
-            const func: Value = {type: 'Closure', name: expr.func, body: expr.val, param: expr.name, env: this.backEnv()}
+            const func: Value = {type: 'Closure', name: expr.func, body: expr.val, param: expr.name.val, env: this.backEnv()}
 
-            this.enterEnv(extendEnv(this.backEnv(), expr.func, func))
+            this.enterEnv(extendEnv(this.backEnv(), expr.func.val, func))
 
             const val = this.interpret(expr.body)
 
