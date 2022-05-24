@@ -65,7 +65,7 @@ export class REPL {
                 }
             }
 
-            cb(null, `${result ? valueDisplay(result) : ''}: ${ty}`)
+            cb(null, `${result ? valueDisplay(result) : ''}: ${ty.pruned}`)
         } catch (e) {
             this.replServer!.clearBufferedCommand()
             console.error('\u001b[31m' + (e as Error).message + '\u001b[0m')

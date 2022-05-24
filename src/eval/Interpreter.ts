@@ -5,7 +5,11 @@ import {Source} from '../parser/Source'
 
 export type Env = Record<string, Value>
 
-export class AnonTagClass {}
+export class AnonTagClass {
+    toString() {
+        return '[ANON]'
+    }
+}
 const AnonTag = new AnonTagClass
 
 export type Value = MakeADT<'type', {
@@ -62,7 +66,7 @@ export const valueStr = (val: Value): string => {
         return `[${val.values.map(el => valueStr(el)).join(', ')}]`
     }
     case 'Closure': {
-        return `${val.name === AnonTag ? `[rec-func] ${val.name}: ` : 'func'} ${val.param} -> ${astToString(val.body)} [env] ${envStr(val.env)}`
+        return `${val.name === AnonTag ? 'func' : `[rec-func] ${val.name} `} ${val.param} -> ${astToString(val.body)} [env] ${envStr(val.env)}`
     }
     case 'Unit': {
         return '()'
