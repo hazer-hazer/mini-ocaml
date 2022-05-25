@@ -1,5 +1,5 @@
 import {Span, Token, TokenKind} from './Token'
-import {astToString, Expr} from './Node'
+import {astToString, Expr, Attr} from './Node'
 import { Settings } from '../settings'
 import { Source } from './Source'
 
@@ -113,6 +113,32 @@ class Parser {
         } else {
             return this.precParse(0)
         }
+    }
+
+    private parseAttrList(): Attr[] {
+        const attrs = []
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            const attr = this.parseAttr()
+            if (!attr) {
+                break
+            }
+            attrs.push(attr)
+        }
+        return attrs
+    }
+
+    private parseAttr(): Attr | null {
+        if (!this.is(TokenKind.At)) {
+            return null
+        }
+        this.advance()
+        const name = this.skip(TokenKind.Ident)
+        const args: Token[] = []
+
+        // TODO: args parsing
+
+        return {name, args}
     }
 
     private parseFunc(): Expr {

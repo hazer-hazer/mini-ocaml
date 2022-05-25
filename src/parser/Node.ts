@@ -1,6 +1,11 @@
 import {MakeADT} from '../adt/adt'
 import {Token, Span, TokenKind} from './Token'
 
+export type Attr = {
+    name: Token
+    args: Token[]
+}
+
 export type Expr = MakeADT<'kind', {
     Var: {
         tok: Token
@@ -66,7 +71,8 @@ export type Expr = MakeADT<'kind', {
     // eslint-disable-next-line @typescript-eslint/ban-types
     Unit: {}
 }> & {
-    span: Span,
+    span: Span
+    attrs?: Attr[]
 };
 
 export const astToString = (n: Expr, precDebug = true): string => {

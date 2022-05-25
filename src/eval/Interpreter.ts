@@ -10,6 +10,7 @@ export class AnonTagClass {
         return '[ANON]'
     }
 }
+
 const AnonTag = new AnonTagClass
 
 export type Value = MakeADT<'type', {

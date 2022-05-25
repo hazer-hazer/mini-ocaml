@@ -27,6 +27,8 @@ export enum TokenKind {
     VBar,    // |
     Comma,  // ,
 
+    At,     // @
+
     // Keywords //
     True,
     False,
@@ -116,6 +118,8 @@ export class Token {
         [TokenKind.Arrow]: '->',  // ->
         [TokenKind.VBar]: '|',    // |
         [TokenKind.Comma]: ',',    // |
+
+        [TokenKind.At]: '@',
 
         // Keywords //
         [TokenKind.True]: 'true',
